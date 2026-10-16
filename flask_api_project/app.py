@@ -19,7 +19,7 @@ client = MongoClient(mongo_uri)
 db = client["flask_app"]
 
 collection = db["users"]
-
+todo_collection = db["todoitems"]
 
 # Task 1 - JSON API
 @app.route("/api", methods=["GET"])
@@ -68,6 +68,42 @@ def form():
 @app.route("/todo", methods=["GET"])
 def todo_page():
     return render_template("todo.html")
+
+# Task 3 - Submit To-Do Item API
+@app.route("/submittodoitem", methods=["POST"])
+def submit_todo_item():
+
+    try:
+        # Get form data
+        item_name = request.form.get("itemName")
+        item_description = request.form.get("itemDescription")
+
+        # Validate input
+        if not item_name or not item_description:
+            return jsonify({
+                "error": "Item Name and Item Description are required."
+            }), 400
+
+        # Create To-Do document
+        todo_item = {
+            "itemName": item_name,
+            "itemDescription": item_description
+        }
+
+        # Insert into MongoDB
+        result = todo_collection.insert_one(todo_item)
+
+        return jsonify({
+            "message": "To-Do item saved successfully.",
+            "id": str(result.inserted_id)
+        }), 201
+
+    except Exception:
+        app.logger.exception("Failed to save To-Do item")
+        return jsonify({
+            "error": "Unable to save To-Do item."
+        }), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)
